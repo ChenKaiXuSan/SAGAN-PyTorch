@@ -15,7 +15,7 @@ def get_parameters():
     parser = argparse.ArgumentParser()
 
     # Model hyper-parameters
-    parser.add_argument('--model', type=str, default='dcgan', choices=['dcgan_projection', 'dcgan'])
+    parser.add_argument('--model', type=str, default='dcgan', choices=['dcgan'])
     parser.add_argument('--img_size', type=int, default=64)
     parser.add_argument('--channels', type=int, default=1, help='number of image channels')
     parser.add_argument('--g_num', type=int, default=5, help='train the generator every 5 steps')
@@ -25,7 +25,7 @@ def get_parameters():
     parser.add_argument('--version', type=str, default='test', help='the version of the path, for implement')
 
     # Training setting
-    parser.add_argument('--epochs', type=int, default=1000, help='numer of epochs of training')
+    parser.add_argument('--epochs', type=int, default=10000, help='numer of epochs of training')
     parser.add_argument('--batch_size', type=int, default=64, help='batch size for the dataloader')
     parser.add_argument('--num_workers', type=int, default=2)
     # TTUR 

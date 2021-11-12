@@ -9,6 +9,8 @@ import torch.nn as nn
 from torch.nn.utils import spectral_norm
 import torch.nn.functional as F
 
+from models.attention import Attention
+
 import numpy as np
 # %%
 class Generator(nn.Module):
@@ -28,7 +30,9 @@ class Generator(nn.Module):
 
         self.l1 = nn.Sequential(
             # input is Z, going into a convolution.
-            nn.ConvTranspose2d(self.z_dim, conv_dim * mult, 4, 1, 0, bias=False),
+            spectral_norm(
+                nn.ConvTranspose2d(self.z_dim, conv_dim * mult, 4, 1, 0, bias=False),
+            ),
             nn.BatchNorm2d(conv_dim * mult),
             nn.ReLU(True)
         )
@@ -36,7 +40,9 @@ class Generator(nn.Module):
         curr_dim = conv_dim * mult
 
         self.l2 = nn.Sequential(
-            nn.ConvTranspose2d(curr_dim, int(curr_dim / 2), 4, 2, 1, bias=False),
+            spectral_norm(
+                nn.ConvTranspose2d(curr_dim, int(curr_dim / 2), 4, 2, 1, bias=False),
+            ),
             nn.BatchNorm2d(int(curr_dim / 2)),
             nn.ReLU(True)
         )
@@ -44,7 +50,9 @@ class Generator(nn.Module):
         curr_dim = int(curr_dim / 2)
 
         self.l3 = nn.Sequential(
-            nn.ConvTranspose2d(curr_dim, int(curr_dim / 2), 4, 2, 1, bias=False),
+            spectral_norm(
+                nn.ConvTranspose2d(curr_dim, int(curr_dim / 2), 4, 2, 1, bias=False),
+            ),
             nn.BatchNorm2d(int(curr_dim / 2)),
             nn.ReLU(True),
         )
@@ -52,7 +60,9 @@ class Generator(nn.Module):
         curr_dim = int(curr_dim / 2)
 
         self.l4 = nn.Sequential(
-            nn.ConvTranspose2d(curr_dim, int(curr_dim / 2), 4, 2, 1, bias=False),
+            spectral_norm(
+                nn.ConvTranspose2d(curr_dim, int(curr_dim / 2), 4, 2, 1, bias=False),
+            ),
             nn.BatchNorm2d(int(curr_dim / 2)),
             nn.ReLU(True)
         )
@@ -64,13 +74,19 @@ class Generator(nn.Module):
             nn.Tanh()
         )
 
-    def forward(self, z):
-        out = self.l1(z)
-        out = self.l2(out)
-        out = self.l3(out)
-        out = self.l4(out)
+        # self.attn1 = Attention(128)
+        self.attn2 = Attention(64)
+        # self.attn = Attention(32)
 
-        out = self.last(out)
+    def forward(self, z):
+        out = self.l1(z) # (*, 512, 4, 4)
+        out = self.l2(out) # (*, 256, 8, 8)
+        out = self.l3(out) # (*, 128, 16, 16)
+        # out = self.attn1(out)
+        out = self.l4(out) # (*, 64, 32, 32)
+        out = self.attn2(out)
+
+        out = self.last(out) # (*, c, 64, 64)
 
         return out
 
@@ -122,12 +138,14 @@ class Discriminator(nn.Module):
 
         curr_dim = curr_dim * 2
         
+        # self.attn1 = Attention(256)
+        self.attn2 = Attention(512)
+
         # output layers
         # (*, 512, 4, 4)
         self.last_adv = nn.Sequential(
             spectral_norm(
-                nn.Linear(curr_dim, 1)
-                # nn.Conv2d(curr_dim, 1, 4, 1, 0, bias=False),
+                nn.Conv2d(curr_dim, 1, 4, 1, 0, bias=False),
             )
             # without sigmoid, used in the loss funciton
             )
@@ -136,11 +154,10 @@ class Discriminator(nn.Module):
         out = self.l1(x) # (*, 64, 32, 32)
         out = self.l2(out) # (*, 128, 16, 16)
         out = self.l3(out) # (*, 256, 8, 8)
+        # out = self.attn1(out)
         out = self.l4(out) # (*, 512, 4, 4)
+        out =  self.attn2(out)
 
-        out =  F.leaky_relu(out, 0.2)
-        out = torch.sum(out, dim=(2, 3)) # Global pooling
-
-        validity = self.last_adv(out) # (*, 1,)
+        validity = self.last_adv(out) # (*, 1, 1, 1)
 
         return validity.squeeze()

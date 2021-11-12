@@ -8,12 +8,9 @@ import torch
 import datetime
 
 import torch.nn as nn
-from torch.nn.modules import conv 
 import torchvision
-from torchvision.utils import save_image
 
-from models.dcgan import Generator, Discriminator
-from models.dcgan_projection import Generator as G_p, Discriminator as D_p
+from models.sagan import Generator, Discriminator
 from utils.utils import *
 
 # %%
@@ -69,7 +66,7 @@ class Trainer_dcgan(object):
         '''
 
         # fixed input for debugging
-        fixed_z = tensor2var(torch.randn(10000, self.z_dim, 1, 1)) # (10000, 100, 1, 1)
+        fixed_z = tensor2var(torch.randn(1000, self.z_dim, 1, 1)) # (10000, 100, 1, 1)
 
         for epoch in range(self.epochs):
             # start time
@@ -157,13 +154,9 @@ class Trainer_dcgan(object):
 
     def build_model(self):
 
-        if self.model == 'dcgan':
-            self.G = Generator(image_size = self.imsize, z_dim = self.z_dim, conv_dim = self.g_conv_dim, channels = self.channels).cuda()
-            self.D = Discriminator(image_size = self.imsize, conv_dim = self.d_conv_dim, channels = self.channels).cuda()
-        else:
-            self.G = G_p(image_size=self.imsize, z_dim=self.z_dim, conv_dim=self.g_conv_dim, channels=self.channels).cuda()
-            self.D = D_p(image_size = self.imsize, conv_dim = self.d_conv_dim, channels = self.channels).cuda()
-
+        self.G = Generator(image_size = self.imsize, z_dim = self.z_dim, conv_dim = self.g_conv_dim, channels = self.channels).cuda()
+        self.D = Discriminator(image_size = self.imsize, conv_dim = self.d_conv_dim, channels = self.channels).cuda()
+    
         # apply the weights_init to randomly initialize all weights
         # to mean=0, stdev=0.2
         self.G.apply(weights_init)

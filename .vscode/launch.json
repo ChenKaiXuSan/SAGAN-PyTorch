@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "dcgan",
+            "name": "sagan",
             "type": "python",
             "request": "launch",
             "program": "${workspaceRoot}/main.py",
@@ -21,6 +21,8 @@
                 "debug",
                 "--model",
                 "dcgan",
+                "--batch_size",
+                "1024"
             ]
         },
     ]
