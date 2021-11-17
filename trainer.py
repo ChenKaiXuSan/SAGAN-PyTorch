@@ -14,9 +14,9 @@ from models.sagan import Generator, Discriminator
 from utils.utils import *
 
 # %%
-class Trainer_dcgan(object):
+class Trainer_sagan(object):
     def __init__(self, data_loader, config):
-        super(Trainer_dcgan, self).__init__()
+        super(Trainer_sagan, self).__init__()
 
         # data loader 
         self.data_loader = data_loader
@@ -164,8 +164,8 @@ class Trainer_dcgan(object):
         
         # optimizer 
         self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.g_lr, [self.beta1, self.beta2])
-        # self.d_optimizer = torch.optim.Adam(self.D.parameters(), self.d_lr, [self.beta1, self.beta2])
-        self.d_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.D.parameters()), self.d_lr, [self.beta1, self.beta2])
+        self.d_optimizer = torch.optim.Adam(self.D.parameters(), self.d_lr, [self.beta1, self.beta2])
+        # self.d_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.D.parameters()), self.d_lr, [self.beta1, self.beta2])
 
         # for orignal gan loss function
         self.adversarial_loss_sigmoid = nn.BCEWithLogitsLoss()

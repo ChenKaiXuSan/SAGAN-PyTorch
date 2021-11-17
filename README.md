@@ -2,13 +2,13 @@
 Pytorch implementation of GANs with self-attention moudle.
 
 ## Overview
-This repository contains an Pytorch implementation of Spectral Normalization GAN.
+This repository contains an Pytorch implementation of self-attention GAN.
 With full coments and my code style.
 
-## About SNGAN
+## About SAGAN
 If you're new to SNGAN, here's an abstract straight from the paper[1]:
 
-One of the challenges in the study of generative adversarial networks is the insta- bility of its training. In this paper, we propose a novel weight normalization tech- nique called spectral normalization to stabilize the training of the discriminator. Our new normalization technique is computationally light and easy to incorporate into existing implementations. We tested the efficacy of spectral normalization on CIFAR10, STL-10, and ILSVRC2012 dataset, and we experimentally confirmed that spectrally normalized GANs (SN-GANs) is capable of generating images of better or equal quality relative to the previous training stabilization techniques. The code with Chainer (Tokui et al., 2015), generated images and pretrained mod- els are available at [SNGAN](https://github.com/pfnet-research/sngan_projection).
+In this paper, we propose the Self-Attention Gen- erative Adversarial Network (SAGAN) which allows attention-driven, long-range dependency modeling for image generation tasks. Traditional convolutional GANs generate high-resolution de- tails as a function of only spatially local points in lower-resolution feature maps. In SAGAN, de- tails can be generated using cues from all feature locations. Moreover, the discriminator can check that highly detailed features in distant portions of the image are consistent with each other. Fur- thermore, recent work has shown that generator conditioning affects GAN performance. Leverag- ing this insight, we apply spectral normalization to the GAN generator and find that this improves training dynamics. The proposed SAGAN per- forms better than prior work1, boosting the best published Inception score from 36.8 to 52.52 and reducing Fr´echet Inception distance from 27.62 to 18.65 on the challenging ImageNet dataset. Visu- alization of the attention layers shows that the generator leverages neighborhoods that correspond to object shapes rather than local regions of fixed shape.
 
 ## Dataset 
 - MNIST
@@ -20,7 +20,7 @@ One of the challenges in the study of generative adversarial networks is the ins
 
 ## Implement
 ``` python
-usage: main.py [-h] [--model {dcgan_projection,dcgan}] [--img_size IMG_SIZE]
+usage: main.py [-h] [--model {sagan}] [--img_size IMG_SIZE]
                [--channels CHANNELS] [--g_num G_NUM] [--z_dim Z_DIM]
                [--g_conv_dim G_CONV_DIM] [--d_conv_dim D_CONV_DIM]
                [--version VERSION] [--epochs EPOCHS] [--batch_size BATCH_SIZE]
@@ -35,7 +35,7 @@ usage: main.py [-h] [--model {dcgan_projection,dcgan}] [--img_size IMG_SIZE]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --model {dcgan_projection,dcgan}
+  --model {sagan}
   --img_size IMG_SIZE
   --channels CHANNELS   number of image channels
   --g_num G_NUM         train the generator every 5 steps
@@ -85,13 +85,13 @@ For the FID, I use the pytorch implement of this repository. [FID score for PyTo
 
 - MNIST
 For the 10k epochs training on MNIST dataset, compare with about 10k samples, I get the FID: 
-> 26.023142081893553 
+> 500 failure 
 - CIFAR10
-For the 10k epochs training on the CIFAR10 dataset, compare with about 10k samples, I get the FID: 
-> 108.10053254296571 :warning: I think this test is failing, the reason dont konw why.
+<!-- For the 10k epochs training on the CIFAR10 dataset, compare with about 10k samples, I get the FID: 
+> 108.10053254296571 :warning: I think this test is failing, the reason dont konw why. -->
 - FASHION-MNIST
-For the 10k epochs training on the CIFAR10 dataset, compare with about 10k samples, I get the FID: 
->  46.96466240507351
+<!-- For the 10k epochs training on the CIFAR10 dataset, compare with about 10k samples, I get the FID: 
+>  46.96466240507351 -->
 
 > :warning: I dont konw if the FID is right or not, because I cant get the lowwer score like the paper or the other people get it. 
 ## Network structure
@@ -118,13 +118,19 @@ Generator(
     (2): ReLU(inplace=True)
   )
   (last): Sequential(
-    (0): ConvTranspose2d(64, 3, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False)
+    (0): ConvTranspose2d(64, 1, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False)
     (1): Tanh()
+  )
+  (attn2): Attention(
+    (theta): Conv2d(64, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    (phi): Conv2d(64, 8, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    (g): Conv2d(64, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    (o): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
   )
 )
 Discriminator(
   (l1): Sequential(
-    (0): Conv2d(3, 64, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False)
+    (0): Conv2d(1, 64, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False)
     (1): LeakyReLU(negative_slope=0.2, inplace=True)
   )
   (l2): Sequential(
@@ -139,6 +145,12 @@ Discriminator(
     (0): Conv2d(256, 512, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1), bias=False)
     (1): LeakyReLU(negative_slope=0.2, inplace=True)
   )
+  (attn2): Attention(
+    (theta): Conv2d(512, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    (phi): Conv2d(512, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    (g): Conv2d(512, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    (o): Conv2d(256, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+  )
   (last_adv): Sequential(
     (0): Conv2d(512, 1, kernel_size=(4, 4), stride=(1, 1), bias=False)
   )
@@ -146,14 +158,10 @@ Discriminator(
 ```
 ## Result
 - MNIST  
-![9900_MNSIT](img/9900_MNIST.png)
+<!-- ![9900_MNSIT](img/9900_MNIST.png) -->
 - CIFAR10  
-![9900_cifar10](img/9900_cifar10.png)
+<!-- ![9900_cifar10](img/9900_cifar10.png) -->
 - Fashion-MNIST
-![9900_fashion](img/9900_fashion.png)
+<!-- ![9900_fashion](img/9900_fashion.png) -->
 ## Reference
-1. [SNGAN](https://arxiv.org/abs/1802.05957)
-
-## TODO
-- [x] SNGAN implement.
-- [ ] DCGAN model with projection discriminator
+1. [SAGAN](http://arxiv.org/abs/1805.08318)
