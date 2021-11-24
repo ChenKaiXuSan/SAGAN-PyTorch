@@ -23,6 +23,7 @@ class Trainer_sagan(object):
 
         # exact model and loss 
         self.model = config.model
+        self.adv_loss = config.adv_loss
 
         # model hyper-parameters
         self.imsize = config.img_size 
@@ -90,7 +91,10 @@ class Trainer_sagan(object):
                 # compute loss with real images 
                 d_out_real = self.D(real_images)
 
-                d_loss_real = self.adversarial_loss_sigmoid(d_out_real, valid)
+                if self.adv_loss == 'gan':
+                    d_loss_real = self.adversarial_loss_sigmoid(d_out_real, valid)
+                elif self.adv_loss == 'hinge':
+                    d_loss_real = torch.nn.ReLU()(1.0 - d_out_real).mean()
 
                 # noise z for generator
                 z = tensor2var(torch.randn(real_images.size(0), self.z_dim, 1, 1)) # 64, 100, 1, 1
@@ -98,7 +102,10 @@ class Trainer_sagan(object):
                 fake_images = self.G(z) # (*, c, 64, 64)
                 d_out_fake = self.D(fake_images) # (*,)
 
-                d_loss_fake = self.adversarial_loss_sigmoid(d_out_fake, fake)
+                if self.adv_loss == 'gan':
+                    d_loss_fake = self.adversarial_loss_sigmoid(d_out_fake, fake)
+                elif self.adv_loss == 'hinge':
+                    d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
 
                 # total d loss
                 d_loss = d_loss_real + d_loss_fake
@@ -118,7 +125,10 @@ class Trainer_sagan(object):
                     # compute loss with fake images 
                     g_out_fake = self.D(fake_images) # batch x n
 
-                    g_loss_fake = self.adversarial_loss_sigmoid(g_out_fake, valid)
+                    if self.adv_loss == 'gan':
+                        g_loss_fake = self.adversarial_loss_sigmoid(g_out_fake, valid)
+                    elif self.adv_loss == 'hinge':
+                        g_loss_fake = - torch.mean(g_out_fake)
 
                     g_loss_fake.backward()
                     # update G
@@ -133,7 +143,7 @@ class Trainer_sagan(object):
             if (epoch) % self.log_step == 0:
                 elapsed = time.time() - start_time
                 elapsed = str(datetime.timedelta(seconds=elapsed))
-                print("Elapsed [{}], G_step [{}/{}], D_step[{}/{}], d_out_gp: {:.4f}, g_loss: {:.4f}, "
+                print("Elapsed [{}], G_step [{}/{}], D_step[{}/{}], d_out: {:.4f}, g_loss: {:.4f}, "
                     .format(elapsed, epoch, self.epochs, epoch,
                             self.epochs, d_loss.item(), g_loss_fake.item()))
 
@@ -165,7 +175,6 @@ class Trainer_sagan(object):
         # optimizer 
         self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.g_lr, [self.beta1, self.beta2])
         self.d_optimizer = torch.optim.Adam(self.D.parameters(), self.d_lr, [self.beta1, self.beta2])
-        # self.d_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.D.parameters()), self.d_lr, [self.beta1, self.beta2])
 
         # for orignal gan loss function
         self.adversarial_loss_sigmoid = nn.BCEWithLogitsLoss()

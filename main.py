@@ -16,6 +16,7 @@ def get_parameters():
 
     # Model hyper-parameters
     parser.add_argument('--model', type=str, default='sagan', choices=['sagan'])
+    parser.add_argument('--adv_loss', type=str, default='gan', choices=['wgan-gp', 'gan', 'hinge'])
     parser.add_argument('--img_size', type=int, default=64)
     parser.add_argument('--channels', type=int, default=1, help='number of image channels')
     parser.add_argument('--g_num', type=int, default=5, help='train the generator every 5 steps')

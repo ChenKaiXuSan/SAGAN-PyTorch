@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "sagan",
+            "name": "sagan_gan",
             "type": "python",
             "request": "launch",
             "program": "${workspaceRoot}/main.py",
@@ -21,6 +21,26 @@
                 "debug",
                 "--batch_size",
                 "256"
+            ]
+        },{
+            "name": "sagan_hinge",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceRoot}/main.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--dataset",
+                "mnist",
+                "--channels",
+                "1",
+                "--sample_path",
+                "test_sample",
+                "--version",
+                "debug",
+                "--batch_size",
+                "256",
+                "--adv_loss",
+                "hinge"
             ]
         },
     ]

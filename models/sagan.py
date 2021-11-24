@@ -1,10 +1,10 @@
 # %%
 '''
-pure dcgan structure.
+sagan structure.
+where is similar with the SAGAN net structure.
 code similar sample from the pytorch code, and with the spectral normalization.
 https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
 '''
-import torch
 import torch.nn as nn
 from torch.nn.utils import spectral_norm
 import torch.nn.functional as F
