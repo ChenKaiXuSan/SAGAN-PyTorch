@@ -19,10 +19,8 @@
                 "test_sample",
                 "--version",
                 "debug",
-                "--model",
-                "dcgan",
                 "--batch_size",
-                "1024"
+                "256"
             ]
         },
     ]
